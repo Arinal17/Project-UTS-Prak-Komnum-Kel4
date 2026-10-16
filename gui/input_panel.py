@@ -38,3 +38,43 @@ GUIDE = [
 
 
 class InputPanel(QFrame):
+    calculate_requested = pyqtSignal()   # tombol Hitung Akar ditekan
+    reset_requested = pyqtSignal()       # tombol Reset ditekan
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self.setObjectName("card")
+        self.setFixedWidth(292)
+        self._has_result = False
+        self.edits: Dict[str, QLineEdit] = {}
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(22, 24, 22, 22)
+        layout.setSpacing(2)
+
+        title = QLabel("PANEL INPUT")
+        title.setObjectName("cardTitle")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title)
+        layout.addSpacing(10)
+
+        # --- field input ---
+        for key, label, placeholder, example in FIELDS:
+            lab = QLabel(label)
+            lab.setObjectName("fieldLabel")
+            edit = QLineEdit()
+            edit.setPlaceholderText(placeholder)
+            edit.textChanged.connect(self.update_buttons)
+            edit.returnPressed.connect(self._on_enter)
+            hint = QLabel(example)
+            hint.setObjectName("hint")
+            layout.addWidget(lab)
+            layout.addWidget(edit)
+            layout.addWidget(hint)
+            self.edits[key] = edit
+            if key == "function":                                  # [PERUBAHAN 5]
+                edit.textChanged.connect(self._auto_superscript)   # ** otomatis jadi pangkat
+
+        # --- tombol aksi (jajar horizontal) ---
+        layout.addSpacing(10)
+        row = QHBoxLayout()
