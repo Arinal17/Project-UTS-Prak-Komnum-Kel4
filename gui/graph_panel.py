@@ -38,3 +38,15 @@ class GraphPanel(QFrame):
         layout.addWidget(self.canvas, 1)
 
         self.plotter = BisectionPlotter(self.figure, LIGHT)
+        
+    def show_result(self, result: BisectionResult) -> None:
+        """Gambar kurva fungsi, interval, dan titik akar."""
+        inp = result.inputs
+        self.plotter.plot(inp.function, inp.a, inp.b, result.root, result.f_root, inp.decimals)
+
+    def clear(self) -> None:
+        """Reset canvas ke grid kosong awal."""
+        self.plotter.clear()
+
+    def apply_theme(self, theme) -> None:
+        self.plotter.set_theme(theme)
