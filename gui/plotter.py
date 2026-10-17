@@ -43,3 +43,48 @@ def _comma_tick(value: float, _pos) -> str:
 
 class BisectionPlotter:
     def __init__(self, figure: Figure, theme) -> None:
+        self.fig = figure
+        self.theme = theme
+        self.ax = self.fig.add_subplot(111)
+        self._home: Tuple[Tuple[float, float], Tuple[float, float]] = (EMPTY_XLIM, EMPTY_YLIM)
+        self._drag: Optional[dict] = None
+        self._state: Optional[dict] = None      # data hasil terakhir (untuk ganti tema)
+        self._fn = None                          # [PERUBAHAN 3] fungsi vektor f(x) yang sedang digambar
+        self._line: Optional[Line2D] = None      # [PERUBAHAN 3] objek garis kurva
+
+        # [PERUBAHAN 3] area plot dibuat hampir memenuhi canvas (margin dikecilkan)
+        self.fig.subplots_adjust(left=0.085, right=0.985, top=0.985, bottom=0.14)
+        canvas = self.fig.canvas
+        canvas.mpl_connect("scroll_event", self._on_scroll)
+        canvas.mpl_connect("button_press_event", self._on_press)
+        canvas.mpl_connect("motion_notify_event", self._on_motion)
+        canvas.mpl_connect("button_release_event", self._on_release)
+        self.clear()
+
+    # ------------------------------------------------------------------ API
+    def set_theme(self, theme) -> None:
+        """Ganti tema lalu gambar ulang kondisi terakhir (posisi zoom/geser dipertahankan)."""
+        self.theme = theme
+        if self._state is None:
+            self.clear()
+            return
+        xlim, ylim = self.ax.get_xlim(), self.ax.get_ylim()
+        self.plot(**self._state)
+        self.ax.set_xlim(*xlim)                  # [PERUBAHAN 3] jangan reset zoom saat ganti tema
+        self.ax.set_ylim(*ylim)
+        self._finish()
+
+    def clear(self) -> None:
+        """Kembali ke grid kosong awal."""
+        self._state = None
+        self._fn = None                          # [PERUBAHAN 3]
+        self._line = None                        # [PERUBAHAN 3]
+        self._reset_axes()
+        self.ax.set_xlim(*EMPTY_XLIM)
+        self.ax.set_ylim(*EMPTY_YLIM)
+        self._home = (EMPTY_XLIM, EMPTY_YLIM)
+        self._finish()
+
+    def plot(self, function: ParsedFunction, a: float, b: float,
+             root: float, f_root: float, decimals: int) -> None:
+        """Gambar kurva f(x), interval [a, b], dan titik akar."""
