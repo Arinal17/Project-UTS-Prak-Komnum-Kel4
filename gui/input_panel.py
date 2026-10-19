@@ -1,14 +1,3 @@
-"""
-gui/input_panel.py
-==================
-Panel KIRI: form input, tombol [Hitung Akar] & [Reset], dan petunjuk penggunaan.
-
-Aturan tombol:
-  - [Hitung Akar]  aktif hanya bila SEMUA isian terisi.
-  - [Reset]        aktif bila ada isian atau ada hasil yang bisa dihapus.
-  Tombol non-aktif tampil dengan opacity 25% (diatur di theme.py).
-"""
-
 from __future__ import annotations
 
 from typing import Dict

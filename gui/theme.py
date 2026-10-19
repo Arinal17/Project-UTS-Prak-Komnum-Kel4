@@ -1,12 +1,3 @@
-"""
-gui/theme.py
-============
-Design system aplikasi: palet warna Mode Terang & Mode Gelap, serta
-penyusun stylesheet Qt (QSS). Semua warna mengikuti spesifikasi.
-
-Catatan: "Opacity 25%" / "75%" pada spesifikasi diwujudkan dengan warna rgba().
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

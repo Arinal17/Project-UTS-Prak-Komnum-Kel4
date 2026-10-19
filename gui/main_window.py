@@ -1,14 +1,3 @@
-"""
-gui/main_window.py
-==================
-Jendela utama desktop: header (toggle tema, judul, kredit), tata letak 3 kolom,
-dan penghubung (controller) antara panel-panel GUI dengan backend.
-
-Tata letak:
-  [Panel Input] | [Hasil Perhitungan ] | [Grafik Fungsi]
-                | [Tabel Iterasi      ] |
-"""
-
 from __future__ import annotations
 
 import math

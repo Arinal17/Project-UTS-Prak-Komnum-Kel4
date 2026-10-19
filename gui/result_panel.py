@@ -1,10 +1,3 @@
-"""
-gui/result_panel.py
-===================
-Panel TENGAH-ATAS: "Hasil Perhitungan"
-(Akar xr, f(xr), nomor iterasi saat TRUE ditemukan, dan kesimpulan).
-"""
-
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt

@@ -1,10 +1,3 @@
-"""
-gui/graph_panel.py
-==================
-Panel KANAN: "Grafik Fungsi" - menanamkan canvas Matplotlib ke dalam Qt.
-Logika penggambaran ada di gui/plotter.py.
-"""
-
 from __future__ import annotations
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg

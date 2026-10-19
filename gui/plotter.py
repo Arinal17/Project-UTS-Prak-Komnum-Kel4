@@ -1,19 +1,3 @@
-"""
-gui/plotter.py
-==============
-Logika penggambaran grafik fungsi dengan Matplotlib.
-
-Sengaja dipisah dari PyQt (hanya memakai objek Figure) agar:
-  - graph_panel.py cukup menanamkan Figure ke canvas Qt, dan
-  - kode penggambaran bisa diuji tanpa GUI.
-
-Fitur interaktif: scroll mouse = zoom, drag = geser, klik ganda = reset tampilan.
-
-[PERUBAHAN 3] Kurva tidak lagi "terpotong": setiap kali tampilan berubah
-(zoom / geser / reset) kurva dihitung ulang untuk rentang x yang sedang terlihat,
-sehingga grafik selalu tersambung sampai x -> tak hingga.
-"""
-
 from __future__ import annotations
 
 from typing import Optional, Tuple

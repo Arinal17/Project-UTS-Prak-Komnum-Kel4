@@ -1,20 +1,3 @@
-"""
-gui/table_panel.py
-==================
-Panel TENGAH-BAWAH: "Tabel Iterasi" + tombol [Tampilkan Semua] / [Sembunyikan].
-
-Aturan tampilan:
-  - Default : baris r = 1 sampai baris TRUE pertama (baris solusi, disorot).
-  - Klik [Tampilkan Semua] : seluruh iterasi sampai N, tombol menjadi [Sembunyikan].
-  - Bila TRUE tidak ditemukan dalam N iterasi : semua baris sudah tampil,
-    baris terakhir (N) disorot sebagai baris solusi, tombol non-aktif.
-  - Tabel dapat di-scroll bila barisnya melebihi tinggi area tampilan.
-
-[PERUBAHAN 1] Bila baris yang tampil <= 15 (dan tidak ada baris lagi di bawahnya),
-tabel DIPOTONG: tidak ada baris kosong pengisi, tinggi tabel & kartu menyesuaikan
-jumlah baris. Panel memberi tahu jendela utama lewat sinyal `trim_changed`.
-"""
-
 from __future__ import annotations
 
 from typing import List, Optional
