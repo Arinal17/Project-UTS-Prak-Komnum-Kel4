@@ -124,3 +124,39 @@ t = self.theme
             f"({format_number(root, decimals)}; {format_number(f_root, decimals)})",
             xy=(root, f_root), xytext=(10, 14), textcoords="offset points",
             color=t.plot_label, fontsize=9, zorder=7,
+)
+
+        self.ax.set_xlim(x_lo, x_hi)
+        self.ax.set_ylim(y_lo, y_hi)
+        self._home = ((x_lo, x_hi), (y_lo, y_hi))
+
+        # ---- legend di bawah plot ----
+        handles = [
+            Line2D([0], [0], color=t.plot_curve, linewidth=2.2),
+            Line2D([0], [0], marker="o", color="none", markerfacecolor=t.plot_root,
+                   markeredgecolor=t.plot_root, markersize=9),
+        ]
+        labels = [f"f(x) = {function.display}", f"Akar = {format_number(root, decimals)}"]
+        legend = self.fig.legend(handles, labels, loc="lower left", bbox_to_anchor=(0.02, 0.0),
+                                 frameon=False, fontsize=9, labelcolor=t.plot_label)
+        for text in legend.get_texts():
+            text.set_fontweight("bold")
+        self._finish()
+
+    # ------------------------------------------------------------- internal
+    def _reset_axes(self) -> None:
+        """Bersihkan axes + legend lalu terapkan gaya sesuai tema."""
+        t = self.theme
+        for leg in list(self.fig.legends):
+            leg.remove()
+        self.ax.clear()
+        self.fig.patch.set_facecolor(t.plot_bg)
+        self.ax.set_facecolor(t.plot_bg)
+
+        self.ax.minorticks_on()
+        self.ax.set_axisbelow(True)
+        self.ax.xaxis.set_major_formatter(FuncFormatter(_comma_tick))
+        self.ax.yaxis.set_major_formatter(FuncFormatter(_comma_tick))
+        self.ax.grid(which="major", color=t.plot_axis, alpha=0.55, linewidth=0.8)
+        self.ax.grid(which="minor", color=t.plot_axis, alpha=0.20, linewidth=0.5)
+        self.ax.tick_params(which="major", colors=t.plot_axis, labelcolor=t.plot_label,
