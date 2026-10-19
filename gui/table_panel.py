@@ -78,3 +78,135 @@ class TablePanel(QFrame):
         top.addWidget(spacer)
         top.addWidget(self._title, 1)
         top.addWidget(self.btn_toggle)
+layout.addLayout(top)
+
+        # --- tabel ---
+        self.table = QTableWidget(0, len(HEADERS))
+        self.table.setHorizontalHeaderLabels(HEADERS)
+        self.table.verticalHeader().setVisible(False)
+        self.table.verticalHeader().setDefaultSectionSize(ROW_HEIGHT)
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
+        self.table.setColumnWidth(0, 48)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+        self.table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        layout.addWidget(self.table, 1)
+
+    # ------------------------------------------------------------------ API
+    def set_result(self, result: BisectionResult) -> None:
+        """Tampilkan hasil baru (mulai dari mode ringkas)."""
+        self._result = result
+        self._show_all = False
+        self._render()
+
+    def clear(self) -> None:
+        """Kosongkan tabel (kembali ke grid kosong)."""
+        self._result = None
+        self._show_all = False
+        self._render()
+
+    def apply_theme(self, theme) -> None:
+        self._theme = theme
+        self._render()
+
+    # ------------------------------------------------------------- internal
+    def _default_rows(self) -> List[IterationRow]:
+        """Baris yang tampil pada mode ringkas."""
+        if self._result is None:
+            return []
+        rows = self._result.rows
+        if self._result.first_true is not None:
+            return rows[: self._result.first_true + 1]
+        return rows
+
+    def _visible_rows(self) -> List[IterationRow]:
+        if self._result is None:
+            return []
+        return self._result.rows if self._show_all else self._default_rows()
+
+    def _toggle_show_all(self) -> None:
+        self._show_all = not self._show_all
+        self._render()
+
+    # [PERUBAHAN 1] ---- helper ukuran ----
+    def _header_height(self) -> int:
+        h = self.table.horizontalHeader()
+        return max(h.height(), h.sizeHint().height())
+
+    def _top_row_height(self) -> int:
+        return max(self._title.sizeHint().height(), self.btn_toggle.sizeHint().height())
+
+    def _capacity(self) -> int:
+        """Jumlah baris yang muat di tinggi kartu saat ini (untuk baris kosong pengisi)."""
+        overhead = (CARD_MARGINS[1] + CARD_MARGINS[3] + CARD_SPACING
+                    + self._top_row_height() + self._header_height() + 2)
+        return max(8, (self.height() - overhead) // ROW_HEIGHT)
+
+    def _render(self) -> None:
+        t = self._theme
+        rows = self._visible_rows()
+        decimals = self._result.inputs.decimals if self._result else 4
+        highlight = self._result.solution_index if self._result else -1
+
+        # [PERUBAHAN 1] ---- potong tabel bila baris tampil <= 15 ----
+        trimmed = self._result is not None and len(rows) <= TRIM_MAX_ROWS
+        if trimmed:
+            total = len(rows)                                   # tanpa baris kosong pengisi
+            table_h = self._header_height() + total * ROW_HEIGHT + 2
+            self.table.setFixedHeight(table_h)                  # tinggi tabel = isi
+            self.table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            self.setMaximumHeight(CARD_MARGINS[1] + CARD_MARGINS[3] + CARD_SPACING
+                                  + self._top_row_height() + table_h)   # kartu ikut mengecil
+        else:
+            self.table.setMinimumHeight(0)                      # lepaskan batas tinggi
+            self.table.setMaximumHeight(QWIDGETSIZE_MAX)
+            self.table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+            self.setMaximumHeight(QWIDGETSIZE_MAX)
+            # isi baris kosong supaya grid memenuhi tinggi tabel (seperti desain)
+            self._filled_rows = self._capacity()
+            total = max(len(rows), self._filled_rows)
+        self.table.setRowCount(total)
+
+        for i in range(total):
+            if i == highlight and i < len(rows):
+                bg, fg = t.hl_bg, t.hl_text
+            else:
+                bg, fg = (t.row_a if i % 2 == 0 else t.row_b), t.text
+            if i < len(rows):
+                r = rows[i]
+                cells = [
+                    str(r.r),
+                    format_number(r.a, decimals), format_number(r.b, decimals),
+                    format_number(r.fa, decimals), format_number(r.fb, decimals),
+                    format_number(r.xr, decimals), format_number(r.width, decimals),
+                    "TRUE" if r.valid else "FALSE",
+                ]
+            else:
+                cells = [""] * len(HEADERS)
+            for c, text in enumerate(cells):
+                item = QTableWidgetItem(text)
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                item.setFont(self._mono)
+                item.setBackground(QBrush(QColor(bg)))
+                item.setForeground(QBrush(QColor(fg)))
+                self.table.setItem(i, c, item)
+
+        # tombol: aktif hanya bila ada baris tersembunyi (atau sedang mode "semua")
+        has_hidden = self._result is not None and len(self._result.rows) > len(self._default_rows())
+        self.btn_toggle.setText("Sembunyikan" if self._show_all else "Tampilkan Semua")
+        self.btn_toggle.setEnabled(has_hidden)
+
+        # [PERUBAHAN 1] beri tahu jendela utama agar tata letak kolom tengah menyesuaikan
+        if trimmed != self._trimmed:
+            self._trimmed = trimmed
+            self.trim_changed.emit(trimmed)
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        # ukuran berubah -> hitung ulang jumlah baris kosong pengisi (hanya saat tidak dipotong)
+        if not self._trimmed and self._capacity() != self._filled_rows:
+            self._render()
