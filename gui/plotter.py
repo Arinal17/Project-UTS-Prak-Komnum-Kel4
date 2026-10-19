@@ -124,3 +124,75 @@ t = self.theme
             f"({format_number(root, decimals)}; {format_number(f_root, decimals)})",
             xy=(root, f_root), xytext=(10, 14), textcoords="offset points",
             color=t.plot_label, fontsize=9, zorder=7,
+)
+
+        self.ax.set_xlim(x_lo, x_hi)
+        self.ax.set_ylim(y_lo, y_hi)
+        self._home = ((x_lo, x_hi), (y_lo, y_hi))
+
+        # ---- legend di bawah plot ----
+        handles = [
+            Line2D([0], [0], color=t.plot_curve, linewidth=2.2),
+            Line2D([0], [0], marker="o", color="none", markerfacecolor=t.plot_root,
+                   markeredgecolor=t.plot_root, markersize=9),
+        ]
+        labels = [f"f(x) = {function.display}", f"Akar = {format_number(root, decimals)}"]
+        legend = self.fig.legend(handles, labels, loc="lower left", bbox_to_anchor=(0.02, 0.0),
+                                 frameon=False, fontsize=9, labelcolor=t.plot_label)
+        for text in legend.get_texts():
+            text.set_fontweight("bold")
+        self._finish()
+
+    # ------------------------------------------------------------- internal
+    def _reset_axes(self) -> None:
+        """Bersihkan axes + legend lalu terapkan gaya sesuai tema."""
+        t = self.theme
+        for leg in list(self.fig.legends):
+            leg.remove()
+        self.ax.clear()
+        self.fig.patch.set_facecolor(t.plot_bg)
+        self.ax.set_facecolor(t.plot_bg)
+
+        self.ax.minorticks_on()
+        self.ax.set_axisbelow(True)
+        self.ax.xaxis.set_major_formatter(FuncFormatter(_comma_tick))
+        self.ax.yaxis.set_major_formatter(FuncFormatter(_comma_tick))
+        self.ax.grid(which="major", color=t.plot_axis, alpha=0.55, linewidth=0.8)
+        self.ax.grid(which="minor", color=t.plot_axis, alpha=0.20, linewidth=0.5)
+        self.ax.tick_params(which="major", colors=t.plot_axis, labelcolor=t.plot_label,
+                            labelsize=8, length=3)
+        self.ax.tick_params(which="minor", length=0)
+        for side in ("top", "right"):
+            self.ax.spines[side].set_visible(False)
+        for side in ("left", "bottom"):
+            self.ax.spines[side].set_color(t.plot_axis)
+            self.ax.spines[side].set_linewidth(1.3)
+
+        # [PERUBAHAN 3] bingkai tipis di sekeliling area plot, supaya jelas bahwa
+        # kurva hanya "terpotong" oleh jendela tampilan (kurva aslinya terus berlanjut)
+        self.ax.add_patch(Rectangle((0, 0), 1, 1, transform=self.ax.transAxes, fill=False,
+                                    edgecolor=t.plot_axis, linewidth=1.0, zorder=20,
+                                    clip_on=False))
+
+    def _place_axes(self) -> None:
+        """Sumbu melewati titik (0,0) bila terlihat; jika tidak, menempel di tepi."""
+        x0, x1 = self.ax.get_xlim()
+        y0, y1 = self.ax.get_ylim()
+        self.ax.spines["bottom"].set_position(("data", 0) if y0 <= 0 <= y1 else ("axes", 0))
+        self.ax.spines["left"].set_position(("data", 0) if x0 <= 0 <= x1 else ("axes", 0))
+
+    def _update_curve(self) -> None:
+        """
+        [PERUBAHAN 3] Hitung ulang kurva untuk rentang x yang SEDANG terlihat
+        (ditambah sedikit margin). Dipanggil setiap tampilan berubah, sehingga
+        kurva tidak pernah berhenti di batas rentang lama -> seolah sampai tak hingga.
+        """
+        if self._line is None or self._fn is None:
+            return
+        x0, x1 = self.ax.get_xlim()
+        pad = 0.05 * (x1 - x0)
+        xs = np.linspace(x0 - pad, x1 + pad, CURVE_SAMPLES)
+        ys = np.array(self._fn(xs), dtype=float)
+
+        # putus garis di asimtot (mis. tan x): lompatan antar titik > 3x tinggi tampilan
+        y0, y1 = self.ax.get_ylim()

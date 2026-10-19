@@ -249,3 +249,145 @@ class IterationRow:
     b: float
     fa: float
     fb: float
+xr: float       # titik tengah
+    fxr: float      # f(xr)  (tidak dinampakin di tabel, dipake untuk hasil & grafik)
+    width: float    # |b - a|
+    valid: bool     # True kalo galat terpenuhi (|b - a| < eps) atau f(xr) = 0
+
+
+@dataclass
+class BisectionResult:
+    inputs: SolverInputs
+    rows: List[IterationRow]            # SEMUA iterasi, r = 1 .. N
+    first_true: Optional[int]           # indeks (0-based) baris TRUE pertama, None bila tak ada
+    root: float                         # akar solusi (xr pada baris solusi)
+    f_root: float
+    root_iteration: int                 # nomor iterasi baris solusi
+    converged: bool                     # True bila TRUE ditemukan dalam N iterasi
+    exact_root: bool                    # True bila f(xr) = 0 tepat
+
+    @property
+    def solution_index(self) -> int:
+        """Indeks baris solusi: baris TRUE pertama, atau baris terakhir (N)."""
+        return self.first_true if self.first_true is not None else len(self.rows) - 1
+
+
+def solve(inputs: SolverInputs) -> BisectionResult:
+    """
+    Jalankan metode biseksi.
+
+    Algoritma (sesuai slide):
+      - f(a)·f(b) > 0  -> interval belum mengandung akar (error).
+      - xr = (a + b) / 2
+      - f(xr)·f(a) < 0 -> akar di kiri  (b = xr), selain itu a = xr.
+      - validasi = TRUE bila |b - a| < galat.
+
+    Perhitungan SELALU dijalankan sampai iterasi maksimum (N) supaya tombol
+    "Tampilkan Semua" dapat menampilkan seluruh tabel; baris solusi adalah
+    baris TRUE yang pertama.
+    """
+    f = inputs.function.scalar
+    a, b, eps, n_max = inputs.a, inputs.b, inputs.eps, inputs.n_max
+
+    fa, fb = f(a), f(b)
+    if fa * fb > 0:
+        raise InputError(
+            "f(a)·f(b) > 0, sehingga interval [a, b] belum menunjukkan adanya akar.\n"
+            "Silakan ganti nilai Batas Bawah (a) dan Batas Atas (b)."
+        )
+
+    # Kasus khusus: salah satu batas sudah akar eksak -> interval dipersempit
+    # menjadi satu titik supaya iterasi tidak "menjauh" dari akar.
+    if fa == 0:
+        b, fb = a, fa
+    elif fb == 0:
+        a, fa = b, fb
+
+    rows: List[IterationRow] = []
+    first_true: Optional[int] = None
+    exact = False
+
+    for r in range(1, n_max + 1):
+        xr = (a + b) / 2
+        fxr = f(xr)
+        width = abs(b - a)
+        valid = (width < eps) or (fxr == 0)
+
+        rows.append(IterationRow(r, a, b, fa, fb, xr, fxr, width, valid))
+        if valid and first_true is None:
+            first_true = len(rows) - 1
+            exact = fxr == 0
+
+        # --- pilih sub-interval yang masih mengandung akar ---
+        if fxr == 0:
+            a = b = xr                      # akar eksak: bekukan interval
+            fa = fb = 0.0
+        elif fxr * fa < 0:
+            b, fb = xr, fxr                 # akar di sebelah kiri
+        else:
+            a, fa = xr, fxr                 # akar di sebelah kanan
+
+    sol = rows[first_true] if first_true is not None else rows[-1]
+    return BisectionResult(
+        inputs=inputs, rows=rows, first_true=first_true,
+        root=sol.xr, f_root=sol.fxr, root_iteration=sol.r,
+        converged=first_true is not None, exact_root=exact,
+    )
+
+
+# ==========================================================================
+# 4. PEMFORMATAN ANGKA
+# ==========================================================================
+def format_number(value: Optional[float], decimals: int) -> str:
+    """
+    Format angka sesuai jumlah desimal, dengan koma sebagai pemisah desimal.
+
+    Jika nilai bukan nol tetapi akan tampil sebagai 0,0000 (presisinya lebih
+    panjang dari jumlah desimal), otomatis dipakai notasi ilmiah,
+    contoh: 0.000045776 -> '4,5776E-05'.
+    """
+    if value is None:
+        return ""
+    if not math.isfinite(value):
+        return str(value)
+    if value == 0:
+        value = 0.0                                   # hindari "-0,0000"
+    if value != 0 and round(value, decimals) == 0:
+        text = f"{value:.{decimals}E}"
+    else:
+        text = f"{value:.{decimals}f}"
+    return text.replace(".", ",")
+
+
+# ==========================================================================
+# 5. RINGKASAN HASIL
+# ==========================================================================
+@dataclass
+class ResultSummary:
+    root_text: str
+    f_root_text: str
+    iteration_text: str
+    conclusion: str
+
+
+def summarize(result: BisectionResult) -> ResultSummary:
+    """Susun teks untuk blok 'Hasil Perhitungan'."""
+    d = result.inputs.decimals
+    root = format_number(result.root, d)
+    f_root = format_number(result.f_root, d)
+    eps = format_number(result.inputs.eps, d)
+    sol_row = result.rows[result.solution_index]
+
+    if result.converged and result.exact_root:
+        conclusion = (f"Akar fungsi berhasil ditemukan pada iterasi ke-{result.root_iteration} "
+                      f"dengan nilai xr = {root} dan f(xr) = 0 (akar eksak).")
+    elif result.converged:
+        conclusion = (f"Akar fungsi berhasil ditemukan pada iterasi ke-{result.root_iteration} "
+                      f"dengan nilai xr = {root} dan galat < {eps}.")
+    else:
+        width = format_number(sol_row.width, d)
+        conclusion = (f"Peringatan: iterasi maksimum (N = {result.inputs.n_max}) tercapai sebelum "
+                      f"galat < {eps} terpenuhi. Akar pendekatan adalah xr = {root} "
+                      f"pada iterasi ke-{result.root_iteration} dengan |b - a| = {width}.")
+
+    return ResultSummary(root, f_root, str(result.root_iteration), conclusion)
