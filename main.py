@@ -1,13 +1,3 @@
-"""
-main.py
-=======
-Titik masuk aplikasi "Metode Biseksi".
-
-Cara menjalankan:
-    pip install -r requirements.txt
-    python main.py
-"""
-
 import sys
 
 from PyQt6.QtWidgets import QApplication
