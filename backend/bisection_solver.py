@@ -1,17 +1,3 @@
-"""
-backend/bisection_solver.py
-===========================
-Logika bisnis (backend) Metode Biseksi.
-
-Modul ini TIDAK bergantung pada GUI sama sekali, sehingga bisa diuji / dipakai
-ulang secara terpisah. Isinya:
-  1. Parser fungsi f(x) berbasis SymPy (dengan whitelist karakter & nama).
-  2. Validasi seluruh input pengguna.
-  3. Algoritma biseksi (mengikuti slide algoritma pada materi).
-  4. Pemformatan angka (koma desimal + notasi ilmiah otomatis).
-  5. Penyusun teks ringkasan / kesimpulan.
-"""
-
 from __future__ import annotations
 
 import math
@@ -28,9 +14,7 @@ from sympy.parsing.sympy_parser import (
     standard_transformations,
 )
 
-# --------------------------------------------------------------------------
-# Konstanta batas input
-# --------------------------------------------------------------------------
+
 MAX_ITERATIONS = 100   # iterasi maksimum yang boleh diinput
 MAX_DECIMALS = 4       # jumlah angka desimal maksimum yang boleh diinput
 
@@ -39,9 +23,7 @@ class InputError(ValueError):
     """Dilempar bila input pengguna / evaluasi fungsi tidak valid."""
 
 
-# ==========================================================================
-# 1. PARSER FUNGSI f(x)
-# ==========================================================================
+
 _X = sp.Symbol("x")
 
 # Hanya karakter berikut yang boleh muncul di teks fungsi (setelah dinormalkan).
@@ -66,9 +48,7 @@ _LOCALS = {"x": _X, "e": sp.E, "pi": sp.pi}
 _TRANSFORMS = standard_transformations + (implicit_multiplication_application, convert_xor)
 
 
-# --------------------------------------------------------------------------
-# Pangkat dinampakkan sebagai superscript anjay (tanpa tanda ^ / **)
-# --------------------------------------------------------------------------
+
 _SUP_DIGITS = "⁰¹²³⁴⁵⁶⁷⁸⁹"
 _TO_SUP = str.maketrans("0123456789-", _SUP_DIGITS + "⁻")
 _FROM_SUP = str.maketrans(_SUP_DIGITS + "⁻", "0123456789-")
@@ -184,9 +164,7 @@ def parse_function(text: str) -> ParsedFunction:
     return ParsedFunction(expr, scalar, vector, display)
 
 
-# ==========================================================================
-# 2. VALIDASI INPUT
-# ==========================================================================
+
 def parse_number(text: str, label: str) -> float:
     """Ubah teks ('0,0001', '2', '1e-4') menjadi float; koma dianggap desimal."""
     t = (text or "").strip().replace(",", ".")
@@ -239,9 +217,7 @@ def parse_inputs(function: str, a: str, b: str, eps: str, n: str, decimals: str)
     return SolverInputs(func, a_val, b_val, eps_val, n_val, dec_val)
 
 
-# ==========================================================================
-# 3. ALGORITMA BISEKSI
-# ==========================================================================
+
 @dataclass
 class IterationRow:
     r: int          # nomor iterasi
@@ -335,9 +311,7 @@ def solve(inputs: SolverInputs) -> BisectionResult:
     )
 
 
-# ==========================================================================
-# 4. PEMFORMATAN ANGKA
-# ==========================================================================
+
 def format_number(value: Optional[float], decimals: int) -> str:
     """
     Format angka sesuai jumlah desimal, dengan koma sebagai pemisah desimal.
@@ -359,9 +333,7 @@ def format_number(value: Optional[float], decimals: int) -> str:
     return text.replace(".", ",")
 
 
-# ==========================================================================
-# 5. RINGKASAN HASIL
-# ==========================================================================
+
 @dataclass
 class ResultSummary:
     root_text: str
