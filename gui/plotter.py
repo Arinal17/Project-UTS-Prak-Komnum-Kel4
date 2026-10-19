@@ -160,3 +160,39 @@ t = self.theme
         self.ax.grid(which="major", color=t.plot_axis, alpha=0.55, linewidth=0.8)
         self.ax.grid(which="minor", color=t.plot_axis, alpha=0.20, linewidth=0.5)
         self.ax.tick_params(which="major", colors=t.plot_axis, labelcolor=t.plot_label,
+                            labelsize=8, length=3)
+        self.ax.tick_params(which="minor", length=0)
+        for side in ("top", "right"):
+            self.ax.spines[side].set_visible(False)
+        for side in ("left", "bottom"):
+            self.ax.spines[side].set_color(t.plot_axis)
+            self.ax.spines[side].set_linewidth(1.3)
+
+        # [PERUBAHAN 3] bingkai tipis di sekeliling area plot, supaya jelas bahwa
+        # kurva hanya "terpotong" oleh jendela tampilan (kurva aslinya terus berlanjut)
+        self.ax.add_patch(Rectangle((0, 0), 1, 1, transform=self.ax.transAxes, fill=False,
+                                    edgecolor=t.plot_axis, linewidth=1.0, zorder=20,
+                                    clip_on=False))
+
+    def _place_axes(self) -> None:
+        """Sumbu melewati titik (0,0) bila terlihat; jika tidak, menempel di tepi."""
+        x0, x1 = self.ax.get_xlim()
+        y0, y1 = self.ax.get_ylim()
+        self.ax.spines["bottom"].set_position(("data", 0) if y0 <= 0 <= y1 else ("axes", 0))
+        self.ax.spines["left"].set_position(("data", 0) if x0 <= 0 <= x1 else ("axes", 0))
+
+    def _update_curve(self) -> None:
+        """
+        [PERUBAHAN 3] Hitung ulang kurva untuk rentang x yang SEDANG terlihat
+        (ditambah sedikit margin). Dipanggil setiap tampilan berubah, sehingga
+        kurva tidak pernah berhenti di batas rentang lama -> seolah sampai tak hingga.
+        """
+        if self._line is None or self._fn is None:
+            return
+        x0, x1 = self.ax.get_xlim()
+        pad = 0.05 * (x1 - x0)
+        xs = np.linspace(x0 - pad, x1 + pad, CURVE_SAMPLES)
+        ys = np.array(self._fn(xs), dtype=float)
+
+        # putus garis di asimtot (mis. tan x): lompatan antar titik > 3x tinggi tampilan
+        y0, y1 = self.ax.get_ylim()
