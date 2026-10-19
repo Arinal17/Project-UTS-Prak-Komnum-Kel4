@@ -78,3 +78,83 @@ class InputPanel(QFrame):
         # --- tombol aksi (jajar horizontal) ---
         layout.addSpacing(10)
         row = QHBoxLayout()
+        row = QHBoxLayout()
+        row.setSpacing(10)
+        self.btn_calc = QPushButton("Hitung Akar")
+        self.btn_reset = QPushButton("Reset")
+        for btn in (self.btn_calc, self.btn_reset):
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            row.addWidget(btn)
+        self.btn_calc.clicked.connect(self.calculate_requested.emit)
+        self.btn_reset.clicked.connect(self.reset_requested.emit)
+        layout.addLayout(row)
+
+        # --- petunjuk penggunaan ---
+        layout.addSpacing(14)
+        guide_title = QLabel("Cara Penggunaan:")
+        guide_title.setObjectName("guideTitle")
+        layout.addWidget(guide_title)
+        for line in GUIDE:
+            g = QLabel(line)
+            g.setObjectName("guide")
+            g.setWordWrap(True)
+            layout.addWidget(g)
+
+        self.update_buttons()
+
+    # ------------------------------------------------------------------ API
+    def values(self) -> Dict[str, str]:
+        """Isi semua field (kunci sama dengan argumen parse_inputs)."""
+        return {key: edit.text() for key, edit in self.edits.items()}
+
+    def is_complete(self) -> bool:
+        return all(edit.text().strip() for edit in self.edits.values())
+
+    def has_text(self) -> bool:
+        return any(edit.text().strip() for edit in self.edits.values())
+
+    def set_has_result(self, value: bool) -> None:
+        """Diberi tahu oleh jendela utama bila hasil sedang ditampilkan."""
+        self._has_result = value
+        self.update_buttons()
+
+    def clear(self) -> None:
+        """Kosongkan seluruh textfield."""
+        for edit in self.edits.values():
+            edit.blockSignals(True)
+            edit.clear()
+            edit.blockSignals(False)
+        self.update_buttons()
+        self.edits["function"].setFocus()
+
+    def update_buttons(self) -> None:
+        self.btn_calc.setEnabled(self.is_complete())
+        self.btn_reset.setEnabled(self.has_text() or self._has_result)
+
+    def apply_theme(self, theme) -> None:
+        """Placeholder memakai warna dengan opacity 25% (lewat QPalette)."""
+        for edit in self.edits.values():
+            palette = edit.palette()
+            palette.setColor(QPalette.ColorRole.PlaceholderText, QColor(*theme.placeholder_rgba))
+            edit.setPalette(palette)
+
+    # ------------------------------------------------------------- internal
+    def _auto_superscript(self, text: str) -> None:
+        """
+        [PERUBAHAN 5] Saat mengetik di kolom fungsi, "**n" / "^n" langsung diganti
+        superscript (x**2 -> x²). Posisi kursor dijaga agar pengetikan tetap lancar.
+        """
+        new = superscript_exponents(text)
+        if new == text:
+            return
+        edit = self.edits["function"]
+        pos = edit.cursorPosition() + len(new) - len(text)
+        edit.blockSignals(True)                  # cegah pemanggilan berulang
+        edit.setText(new)
+        edit.setCursorPosition(max(0, min(len(new), pos)))
+        edit.blockSignals(False)
+        self.update_buttons()
+
+    def _on_enter(self) -> None:
+        if self.btn_calc.isEnabled():
+            self.calculate_requested.emit()
