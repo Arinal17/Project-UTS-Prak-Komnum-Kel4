@@ -98,3 +98,108 @@ class MainWindow(QMainWindow):
         root = QVBoxLayout(central)
         root.setContentsMargins(14, 8, 14, 18)
         root.setSpacing(10)
+      
+        root.addLayout(self._build_header())
+
+        # --- 3 kolom ---
+        self.input_panel = InputPanel()
+        self.result_panel = ResultPanel()
+        self.table_panel = TablePanel()
+        self.graph_panel = GraphPanel()
+
+        body = QHBoxLayout()
+        body.setSpacing(16)
+        body.addWidget(self.input_panel, 0, Qt.AlignmentFlag.AlignTop)
+
+        # [PERUBAHAN 1] kolom tengah: hasil | tabel | spacer.
+        # Saat tabel dipotong (<= 15 baris), spacer yang menyerap sisa ruang (lihat _on_table_trim_changed)
+        self.middle = QVBoxLayout()
+        self.middle.setSpacing(16)
+        self.middle.addWidget(self.result_panel, 0)
+        self.middle.addWidget(self.table_panel, 1)
+        self.middle.addStretch(0)
+        body.addLayout(self.middle, 5)
+
+        body.addWidget(self.graph_panel, 3)
+        root.addLayout(body, 1)
+
+        # [PERUBAHAN 2] panel grafik kini ikut diberi efek bayangan seperti panel lain
+        for card in (self.input_panel, self.result_panel, self.table_panel, self.graph_panel):
+            _add_shadow(card)
+
+        # --- sambungkan sinyal ---
+        self.input_panel.calculate_requested.connect(self._on_calculate)
+        self.input_panel.reset_requested.connect(self._on_reset)
+        self.toggle_btn.clicked.connect(self._toggle_theme)
+        self.table_panel.trim_changed.connect(self._on_table_trim_changed)   # [PERUBAHAN 1]
+
+        self._apply_theme(LIGHT)
+
+    # ------------------------------------------------------------ header
+    def _build_header(self) -> QHBoxLayout:
+        header = QHBoxLayout()
+        header.setContentsMargins(4, 0, 4, 0)
+
+        self.toggle_btn = ThemeToggleButton()
+
+        left = QWidget()
+        left.setFixedWidth(190)
+        left_lay = QHBoxLayout(left)
+        left_lay.setContentsMargins(0, 0, 0, 0)
+        left_lay.addWidget(self.toggle_btn, 0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+
+        title = QLabel("Metode Biseksi")
+        title.setObjectName("appTitle")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        credit = QLabel("Created By : Kelompok 4")
+        credit.setObjectName("credit")
+        credit.setFixedWidth(190)
+        credit.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop)
+
+        header.addWidget(left)
+        header.addWidget(title, 1)
+        header.addWidget(credit)
+        return header
+
+    # ------------------------------------------------------------- tema
+    def _toggle_theme(self) -> None:
+        self._apply_theme(DARK if self._theme is LIGHT else LIGHT)
+
+    def _apply_theme(self, theme) -> None:
+        self._theme = theme
+        self.setStyleSheet(build_stylesheet(theme))
+        self.toggle_btn.set_mode(theme is DARK, theme.toggle_icon)
+        self.input_panel.apply_theme(theme)
+        self.table_panel.apply_theme(theme)
+        self.graph_panel.apply_theme(theme)
+
+    # [PERUBAHAN 1] ------------------------------------------- tata letak tabel
+    def _on_table_trim_changed(self, trimmed: bool) -> None:
+        """Tabel dipotong -> kartu tabel setinggi isinya, sisa ruang diisi spacer; selain itu tabel memenuhi kolom."""
+        self.middle.setStretch(1, 0 if trimmed else 1)   # indeks 1 = kartu tabel
+        self.middle.setStretch(2, 1 if trimmed else 0)   # indeks 2 = spacer
+
+    # ------------------------------------------------------------ aksi
+    def _on_calculate(self) -> None:
+        """Validasi input -> jalankan biseksi -> perbarui semua panel."""
+        v = self.input_panel.values()
+        try:
+            inputs = parse_inputs(v["function"], v["a"], v["b"], v["eps"], v["n"], v["decimals"])
+            result = solve(inputs)
+        except InputError as err:
+            QMessageBox.warning(self, "Input Tidak Valid", str(err))
+            return
+
+        self.result_panel.show_result(summarize(result))
+        self.table_panel.set_result(result)
+        self.graph_panel.show_result(result)
+        self.input_panel.set_has_result(True)
+
+    def _on_reset(self) -> None:
+        """Kosongkan input, hasil, tabel, dan kembalikan grafik ke grid kosong."""
+        self.input_panel.clear()
+        self.result_panel.clear()
+        self.table_panel.clear()
+        self.graph_panel.clear()
+        self.input_panel.set_has_result(False)
