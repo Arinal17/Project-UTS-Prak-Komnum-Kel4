@@ -88,3 +88,39 @@ class BisectionPlotter:
     def plot(self, function: ParsedFunction, a: float, b: float,
              root: float, f_root: float, decimals: int) -> None:
         """Gambar kurva f(x), interval [a, b], dan titik akar."""
+t = self.theme
+        self._state = dict(function=function, a=a, b=b, root=root,
+                           f_root=f_root, decimals=decimals)
+        self._reset_axes()
+
+        # ---- rentang x awal: sedikit melebar dari [a, b], usahakan memuat x = 0 ----
+        span = b - a
+        x_lo, x_hi = a - 0.5 * span, b + 0.5 * span
+        if 0 < x_lo < 2 * span:
+            x_lo = -0.15 * span
+        if x_hi < 0 and -x_hi < 2 * span:
+            x_hi = 0.15 * span
+
+        # ---- rentang y awal: berdasarkan nilai di sekitar interval [a, b] ----
+        # (abaikan nilai ekstrem, mis. asimtot, dengan persentil)
+        xs = np.linspace(x_lo, x_hi, 900)
+        ys = function.vector(xs)
+        inside = ys[(xs >= a) & (xs <= b) & np.isfinite(ys)]
+        finite = inside if inside.size else ys[np.isfinite(ys)]
+        if finite.size:
+            lo, hi = np.percentile(finite, [1, 99])
+        else:
+            lo, hi = -1.0, 1.0
+        lo, hi = min(lo, 0.0, f_root), max(hi, 0.0, f_root)
+        pad = 0.30 * ((hi - lo) or 1.0)
+        y_lo, y_hi = lo - pad, hi + pad
+
+        # ---- kurva (data diisi oleh _update_curve) & titik akar ----
+        self._fn = function.vector                                         
+        (self._line,) = self.ax.plot([], [], color=t.plot_curve,           
+                                     linewidth=2.2, zorder=3)
+        self.ax.plot([root], [f_root], "o", color=t.plot_root, markersize=9, zorder=6)
+        self.ax.annotate(
+            f"({format_number(root, decimals)}; {format_number(f_root, decimals)})",
+            xy=(root, f_root), xytext=(10, 14), textcoords="offset points",
+            color=t.plot_label, fontsize=9, zorder=7,
