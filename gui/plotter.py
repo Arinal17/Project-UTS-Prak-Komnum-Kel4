@@ -232,3 +232,15 @@ with np.errstate(invalid="ignore"):
 
     def _on_motion(self, event) -> None:
         if self._drag is None or event.x is None:
+            return
+        bbox = self.ax.bbox
+        x0, x1 = self._drag["xlim"]
+        y0, y1 = self._drag["ylim"]
+        dx = (event.x - self._drag["px"]) * (x1 - x0) / bbox.width
+        dy = (event.y - self._drag["py"]) * (y1 - y0) / bbox.height
+        self.ax.set_xlim(x0 - dx, x1 - dx)
+        self.ax.set_ylim(y0 - dy, y1 - dy)
+        self._finish()
+
+    def _on_release(self, event) -> None:
+        self._drag = None
