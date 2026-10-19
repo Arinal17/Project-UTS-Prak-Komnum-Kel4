@@ -78,7 +78,6 @@ class InputPanel(QFrame):
         # --- tombol aksi (jajar horizontal) ---
         layout.addSpacing(10)
         row = QHBoxLayout()
-        row = QHBoxLayout()
         row.setSpacing(10)
         self.btn_calc = QPushButton("Hitung Akar")
         self.btn_reset = QPushButton("Reset")
