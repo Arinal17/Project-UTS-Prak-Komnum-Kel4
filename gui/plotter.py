@@ -88,7 +88,7 @@ class BisectionPlotter:
     def plot(self, function: ParsedFunction, a: float, b: float,
              root: float, f_root: float, decimals: int) -> None:
         """Gambar kurva f(x), interval [a, b], dan titik akar."""
-t = self.theme
+        t = self.theme
         self._state = dict(function=function, a=a, b=b, root=root,
                            f_root=f_root, decimals=decimals)
         self._reset_axes()
@@ -196,7 +196,7 @@ t = self.theme
 
         # putus garis di asimtot (mis. tan x): lompatan antar titik > 3x tinggi tampilan
         y0, y1 = self.ax.get_ylim()
-with np.errstate(invalid="ignore"):
+        with np.errstate(invalid="ignore"):
             jump = np.abs(np.diff(ys)) > 3 * ((y1 - y0) or 1.0)
         ys[:-1][jump] = np.nan
         self._line.set_data(xs, ys)

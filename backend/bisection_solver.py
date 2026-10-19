@@ -249,7 +249,7 @@ class IterationRow:
     b: float
     fa: float
     fb: float
-xr: float       # titik tengah
+    xr: float       # titik tengah
     fxr: float      # f(xr)  (tidak dinampakin di tabel, dipake untuk hasil & grafik)
     width: float    # |b - a|
     valid: bool     # True kalo galat terpenuhi (|b - a| < eps) atau f(xr) = 0

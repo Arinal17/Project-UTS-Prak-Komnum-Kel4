@@ -78,7 +78,7 @@ class TablePanel(QFrame):
         top.addWidget(spacer)
         top.addWidget(self._title, 1)
         top.addWidget(self.btn_toggle)
-layout.addLayout(top)
+        layout.addLayout(top)
 
         # --- tabel ---
         self.table = QTableWidget(0, len(HEADERS))
