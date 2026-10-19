@@ -196,3 +196,39 @@ t = self.theme
 
         # putus garis di asimtot (mis. tan x): lompatan antar titik > 3x tinggi tampilan
         y0, y1 = self.ax.get_ylim()
+with np.errstate(invalid="ignore"):
+            jump = np.abs(np.diff(ys)) > 3 * ((y1 - y0) or 1.0)
+        ys[:-1][jump] = np.nan
+        self._line.set_data(xs, ys)
+
+    def _finish(self) -> None:
+        self._place_axes()
+        self._update_curve()                     # [PERUBAHAN 3]
+        self.fig.canvas.draw_idle()
+
+    # ------------------------------------------------ interaksi mouse (zoom/pan)
+    def _on_scroll(self, event) -> None:
+        if event.inaxes is not self.ax or event.xdata is None:
+            return
+        scale = 0.8 if event.button == "up" else 1.25
+        x0, x1 = self.ax.get_xlim()
+        y0, y1 = self.ax.get_ylim()
+        self.ax.set_xlim(event.xdata - (event.xdata - x0) * scale,
+                         event.xdata + (x1 - event.xdata) * scale)
+        self.ax.set_ylim(event.ydata - (event.ydata - y0) * scale,
+                         event.ydata + (y1 - event.ydata) * scale)
+        self._finish()
+
+    def _on_press(self, event) -> None:
+        if event.inaxes is not self.ax or event.button != 1:
+            return
+        if getattr(event, "dblclick", False):               # klik ganda = reset tampilan
+            self.ax.set_xlim(*self._home[0])
+            self.ax.set_ylim(*self._home[1])
+            self._finish()
+            return
+        self._drag = dict(px=event.x, py=event.y,
+                          xlim=self.ax.get_xlim(), ylim=self.ax.get_ylim())
+
+    def _on_motion(self, event) -> None:
+        if self._drag is None or event.x is None:
