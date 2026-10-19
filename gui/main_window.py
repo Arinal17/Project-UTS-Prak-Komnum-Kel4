@@ -37,7 +37,7 @@ class ThemeToggleButton(QPushButton):
     def sizeHint(self) -> QSize:
         return QSize(44, 44)
 
-def paintEvent(self, event) -> None:            # ikon digambar manual (tanpa file gambar)
+    def paintEvent(self, event) -> None:            # ikon digambar manual (tanpa file gambar)
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         c = QPointF(self.width() / 2, self.height() / 2)
