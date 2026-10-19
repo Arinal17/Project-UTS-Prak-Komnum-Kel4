@@ -339,11 +339,11 @@ Pemisahan `backend` (perhitungan) dan `gui` (tampilan) membuat logika Metode Bis
 
 **Project Biseksi — Praktikum Komputasi Numerik**
 
-| No | Nama |
-|---|---|
-| 1 | Arinal Haq |
-| 2 | Alief Aqsha |
-| 3 | Hanif Maulana |
-| 4 | Abrar Muda |
-| 5 | Nabil Al Fijar |
-| 6 | Putroe Zalfa |
+| No | Nama | NPM |
+|---|---|---|
+| 1 | Arinal Haq | 250810701100073 |
+| 2 | Alief Aqsha | 250810701100063 |
+| 3 | Hanif Maulana | 250810701100008 |
+| 4 | Abrar Muda | 250810701100080 |
+| 5 | Nabil Al Fijar | 250810701100031 |
+| 6 | Putroe Zalfa | 250810701100024 |
